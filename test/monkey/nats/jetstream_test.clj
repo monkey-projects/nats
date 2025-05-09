@@ -11,6 +11,12 @@
           stream (jsm/add-stream mgmt
                                  {:name h/stream
                                   :storage-type :file
-                                  :subjects ["test.*"]})]
+                                  :subjects ["test.*"]})
+          js (sut/make-jetstream conn)
+          c (jsm/make-consumer mgmt
+                               stream
+                               {:name "test-consumer"
+                                :filter-subjects ["test.js.1"]})]
+      (is (some? c))
 
       (is (true? (jsm/delete-stream mgmt stream))))))

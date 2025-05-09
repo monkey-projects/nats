@@ -11,7 +11,7 @@
   (let [params (-> (api/build-params ctx)
                    (select-keys ["NATS_URL" "NATS_CREDS"]))]
     (-> (clj/deps-test {})
-        (m/env params))))
+        (m/env (assoc params "NATS_STREAM" (str "test-" (get-in ctx [:build :build-id])))))))
 
 (def deploy-job (clj/deps-publish {}))
 
