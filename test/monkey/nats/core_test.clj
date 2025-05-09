@@ -1,28 +1,11 @@
 (ns monkey.nats.core-test
-  (:require [clojure.test :refer [deftest testing is]]
-            [babashka.fs :as fs]
-            [clojure.edn :as edn]
-            [monkey.nats.core :as sut]
-            [config.core :as cc])
-  (:import io.nats.client.Message))
-
-(def url (:nats-url cc/env))
-(def creds (:nats-creds cc/env))
-
-(defn- add-creds [conf]
-  (let [k (if (fs/exists? creds) :credential-path :static-creds)]
-    (assoc conf k creds)))
-
-(defn- wait-until [pred timeout rv]
-  (let [start (System/currentTimeMillis)]
-    (loop []
-      (if-let [v (pred)]
-        v
-        (if (> (- (System/currentTimeMillis) start) timeout)
-          rv
-          (do
-            (Thread/sleep 100)
-            (recur)))))))
+  (:require [clojure
+             [edn :as edn]
+             [test :refer [deftest is testing]]]
+            [monkey.nats
+             [core :as sut]
+             [test-helpers :as h]])
+  (:import (io.nats.client Message)))
 
 (deftest make-options
   (testing "passes urls from map"
@@ -41,10 +24,7 @@
                    (.getAuthHandler))))))
 
 (deftest integration-test
-  (let [conn (sut/make-connection (-> {:urls [url]
-                                       :secure? true
-                                       :verbose? true}
-                                      (add-creds)))]
+  (with-open [conn (h/make-connection)]
     (testing "can connect to server"
       (is (sut/connection? conn)))
 
@@ -57,7 +37,7 @@
         (is (nil? (sut/publish conn subject "Test message" {}))))
 
       (testing "invokes handler on received message"
-        (is (not= :timeout (wait-until #(not-empty @recv) 1000 :timeout)))
+        (is (not= :timeout (h/wait-until #(not-empty @recv) 1000 :timeout)))
         (is (= 1 (count @recv))))
 
       (testing "can unsubscribe"

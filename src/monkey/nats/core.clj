@@ -11,20 +11,25 @@
 
 (def connection? (partial instance? Connection))
 
+(defn configure-builder [builder appliers conf]
+  (reduce-kv (fn [o k v]
+               (let [a (get appliers k)]
+                 (cond-> o
+                   a (a v))))
+             builder
+             conf))
+
 (defn- apply-conf [opts conf]
   (let [appliers {:urls #(.servers %1 (into-array String %2))
-                  :secure? (fn [o _] (.secure o))
+                  :secure? (fn [o t?] (cond-> o
+                                        t? (.secure)))
                   :token #(.token %1 (.toCharArray %2))
                   :auth-handler #(.authHandler %1 %2)
                   :credential-path #(.credentialPath %1 %2)
                   :static-creds #(.authHandler %1 (Nats/staticCredentials (.getBytes %2)))
-                  :verbose? (fn [o _] (.verbose o))}]
-    (reduce-kv (fn [o k v]
-                 (let [a (get appliers k)]
-                   (cond-> o
-                     a (a v))))
-               opts
-               conf)))
+                  :verbose? (fn [o t?] (cond-> o
+                                         t? (.verbose)))}]
+    (configure-builder opts appliers conf)))
 
 (defn make-options
   "Creates a Nats options object using the given configuration"
