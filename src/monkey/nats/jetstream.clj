@@ -57,11 +57,11 @@
     (reify
       clojure.lang.IFn
       (invoke [this]
-        (.nextMessage this))
+        (cond-> (.nextMessage this)
+          deserializer (deserializer)))
       FetchConsumer
       (nextMessage [_]
-        (cond-> (.nextMessage f)
-          deserializer (deserializer)))
+        (.nextMessage f))
       (close [_]
         (.close f)))))
 

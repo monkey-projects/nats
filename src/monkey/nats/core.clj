@@ -62,7 +62,7 @@
   "Creates a subscription for the given subject, which invokes `handler` on each
    received message.  Returns a subscription that can be passed to `unsubscribe`.
    An `queue` and `deserializer` fn can be passed to the options."
-  [conn subject handler {:keys [queue deserializer]}]
+  [conn subject handler {:keys [queue deserializer] :or {deserializer from-edn}}]
   (let [h (->message-handler (cond-> handler
                                deserializer (comp deserializer)))]
     (cond-> (.createDispatcher conn)
