@@ -50,7 +50,7 @@
             sub (sut/subscribe conn subject (partial swap! recv conj)
                                {:deserializer sut/from-edn})]
         (is (nil? (sut/publish conn subject msg {:serializer sut/to-edn})))
-        (is (not= :timeout (wait-until #(not-empty @recv) 1000 :timeout)))
+        (is (not= :timeout (h/wait-until #(not-empty @recv) 1000 :timeout)))
         (is (= [msg] @recv))
         (is (some? (sut/unsubscribe sub)))))
 
