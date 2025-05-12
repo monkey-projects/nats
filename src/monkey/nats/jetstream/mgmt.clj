@@ -3,7 +3,8 @@
   (:require [monkey.nats.core :as c])
   (:import [io.nats.client.api
             ConsumerConfiguration ConsumerConfiguration$Builder
-            StreamConfiguration StreamConfiguration$Builder StorageType]))
+            StreamConfiguration StreamConfiguration$Builder StorageType
+            AckPolicy]))
 
 (defn make-mgmt
   "Creates management context from Nats connection"
@@ -43,13 +44,20 @@
 (defmacro cons-builder-fn [n & args]
   `(memfn ^StreamConfiguration$Builder ~n ~@args))
 
+(defn- parse-ack-policy [p]
+  (case p
+    :all AckPolicy/All
+    :explicit AckPolicy/Explicit
+    :none AckPolicy/None))
+
 (defn consumer-options
   "Creates a `ConsumerConfiguration` from give conf map"
   [conf]
   (let [appliers {:durable (cons-builder-fn durable n)
                   :name (cons-builder-fn name n)
                   :description (cons-builder-fn description d)
-                  :filter-subjects (cons-builder-fn filterSubjects l)}]
+                  :filter-subjects (cons-builder-fn filterSubjects l)
+                  :ack-policy #(.ackPolicy %1 (parse-ack-policy %2))}]
     (-> (ConsumerConfiguration/builder)
         (c/configure-builder appliers conf)
         (.build))))
