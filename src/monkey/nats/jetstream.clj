@@ -26,10 +26,11 @@
    the given handler.  Returns a `MessageConsumer` that can be `stop`ped
    or `close`d.  Depending on the consumer configuration `ack-policy`, 
    messages may need to be explicitly `ack`ed."
-  ([^io.nats.client.ConsumerContext ctx handler conf]
+  ([^io.nats.client.ConsumerContext ctx handler {:keys [deserializer] :as conf}]
    (.consume ctx
-             (consume-options conf)
-             (c/->message-handler handler)))
+             (consume-options (dissoc conf :deserializer))
+             (c/->message-handler (cond-> handler
+                                    deserializer (comp deserializer)))))
   ([ctx handler]
    (consume ctx handler {})))
 
@@ -49,15 +50,18 @@
   "Creates a fetcher for the consumercontext.  It allows the caller to explicitly
    retrieve the next message, instead of using a handler like with `consume`.
    The return value can be called as a function, or used as a `FetchConsumer`"
-  [^io.nats.client.ConsumerContext ctx conf]
-  (let [f (.fetch ctx (fetch-options conf))]
+  [^io.nats.client.ConsumerContext ctx {:keys [deserializer] :as conf}]
+  (let [f (.fetch ctx (-> conf
+                          (dissoc :deserializer)
+                          (fetch-options)))]
     (reify
       clojure.lang.IFn
-      (invoke [_]
-        (.nextMessage f))
+      (invoke [this]
+        (.nextMessage this))
       FetchConsumer
       (nextMessage [_]
-        (.nextMessage f))
+        (cond-> (.nextMessage f)
+          deserializer (deserializer)))
       (close [_]
         (.close f)))))
 
