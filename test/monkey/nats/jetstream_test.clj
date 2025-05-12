@@ -61,3 +61,9 @@
 
       (testing "can delete stream"
         (is (true? (jsm/delete-stream mgmt stream)))))))
+
+(deftest consume-options
+  (testing "can set group"
+    (is (= "test-group" (-> {:group "test-group"}
+                            (sut/consume-options)
+                            (.getGroup))))))

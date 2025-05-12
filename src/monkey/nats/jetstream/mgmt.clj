@@ -1,6 +1,6 @@
 (ns monkey.nats.jetstream.mgmt
   "Jetstream management functions"
-  (:require [monkey.nats.core :as c])
+  (:require [monkey.nats.utils :as u])
   (:import [io.nats.client.api
             ConsumerConfiguration ConsumerConfiguration$Builder
             StreamConfiguration StreamConfiguration$Builder StorageType
@@ -25,7 +25,7 @@
 
 (defn make-options [conf]
   (-> (StreamConfiguration/builder)
-      (c/configure-builder appliers conf)
+      (u/configure-builder appliers conf)
       (.build)))
 
 (defn stream-name [s]
@@ -59,7 +59,7 @@
                   :filter-subjects (cons-builder-fn filterSubjects l)
                   :ack-policy #(.ackPolicy %1 (parse-ack-policy %2))}]
     (-> (ConsumerConfiguration/builder)
-        (c/configure-builder appliers conf)
+        (u/configure-builder appliers conf)
         (.build))))
 
 (defn make-consumer

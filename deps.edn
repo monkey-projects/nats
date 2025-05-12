@@ -1,4 +1,6 @@
-{:deps {io.nats/jnats {:mvn/version "2.21.0"}
+{:deps {camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}
+        cheshire/cheshire {:mvn/version "6.0.0"}
+        io.nats/jnats {:mvn/version "2.21.0"}
         org.slf4j/jul-to-slf4j {:mvn/version "2.1.0-alpha1"}}
 
  :paths ["src"]

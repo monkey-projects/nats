@@ -5,19 +5,12 @@
              [edn :as edn]
              [string :as str]]
             [clojure.java.io :as io]
-            [clojure.tools.logging :as log])
+            [clojure.tools.logging :as log]
+            [monkey.nats.utils :as u])
   (:import [io.nats.client Connection MessageHandler Nats Options$Builder]
            java.io.PushbackReader))
 
 (def connection? (partial instance? Connection))
-
-(defn configure-builder [builder appliers conf]
-  (reduce-kv (fn [o k v]
-               (let [a (get appliers k)]
-                 (cond-> o
-                   a (a v))))
-             builder
-             conf))
 
 (defn- apply-conf [opts conf]
   (let [appliers {:urls #(.servers %1 (into-array String %2))
@@ -29,7 +22,7 @@
                   :static-creds #(.authHandler %1 (Nats/staticCredentials (.getBytes %2)))
                   :verbose? (fn [o t?] (cond-> o
                                          t? (.verbose)))}]
-    (configure-builder opts appliers conf)))
+    (u/configure-builder opts appliers conf)))
 
 (defn make-options
   "Creates a Nats options object using the given configuration"
@@ -60,7 +53,7 @@
   (with-open [r (PushbackReader. (io/reader (.getData msg)))]
     (edn/read r)))
 
-(defn ->message-handler [f]
+(defn ->message-handler ^MessageHandler [f]
   (reify MessageHandler
     (onMessage [this msg]
       (f msg))))
