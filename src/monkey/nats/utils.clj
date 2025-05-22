@@ -9,7 +9,7 @@
    functions that are inherited from protected classes.  It also reduces
    the effort to map Clojure structs to the Java builders."
   [obj]
-  (json/generate-string obj {:key-fn (comp csk/->camelCase name)}))
+  (json/generate-string obj {:key-fn (comp csk/->snake_case name)}))
 
 (defn method ^java.lang.reflect.Method [^java.lang.Class cl ^String n arg-types]
   (.getMethod cl n (into-array java.lang.Class arg-types)))

@@ -20,7 +20,7 @@
                                stream
                                {:filter-subjects [subject]
                                 :ack-policy :all
-                                :durable id})
+                                :durable-name id})
           recv (atom [])
           handler (fn [msg]
                     (swap! recv conj msg)

@@ -113,7 +113,7 @@ a wrapper for JetStream.  It consists of two namespaces: one to manage streams
                               :subjects ["test.subject"]
 			      :storage-type :file}))
 ;; Set up a consumer to pull messages
-(def consumer (mgmt/make-consumer mgmt stream {:durable "my-consumer-id"}))
+(def consumer (mgmt/make-consumer mgmt stream {:durable-name "my-consumer-id"}))
 
 ;; Create jetstream context for further use
 (def js (js/make-jetstream conn))

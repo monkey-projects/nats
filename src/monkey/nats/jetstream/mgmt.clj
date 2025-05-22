@@ -23,7 +23,9 @@
                :storage-type #(.storageType %1 (parse-storage-type %2))
                :subjects #(.subjects %1 (into-array String %2))})
 
-(defn make-options [conf]
+(defn make-options
+  "Creates stream configuration options, that can be used to create a new stream."
+  [conf]
   (-> (StreamConfiguration/builder)
       (u/configure-builder appliers conf)
       (.build)))
@@ -41,26 +43,11 @@
   [mgmt s]
   (.deleteStream mgmt (stream-name s)))
 
-(defmacro cons-builder-fn [n & args]
-  `(memfn ^StreamConfiguration$Builder ~n ~@args))
-
-(defn- parse-ack-policy [p]
-  (case p
-    :all AckPolicy/All
-    :explicit AckPolicy/Explicit
-    :none AckPolicy/None))
-
 (defn consumer-options
-  "Creates a `ConsumerConfiguration` from give conf map"
+  "Creates a `ConsumerConfiguration` from given conf map"
   [conf]
-  (let [appliers {:durable (cons-builder-fn durable n)
-                  :name (cons-builder-fn name n)
-                  :description (cons-builder-fn description d)
-                  :filter-subjects (cons-builder-fn filterSubjects l)
-                  :ack-policy #(.ackPolicy %1 (parse-ack-policy %2))}]
-    (-> (ConsumerConfiguration/builder)
-        (u/configure-builder appliers conf)
-        (.build))))
+  (-> (ConsumerConfiguration/builder)
+      (u/configure-builder conf)))
 
 (defn make-consumer
   "Creates a consumer for the given jetstream context with the specified options.
