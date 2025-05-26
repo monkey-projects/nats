@@ -140,6 +140,17 @@ a wrapper for JetStream.  It consists of two namespaces: one to manage streams
 (mgmt/delete-stream stream)
 ```
 
+Note that fetchers can only be used once.  If you need to take multiple messages
+in a loop, you can use `take-next`:
+
+```clojure
+(js/take-next ctx {:timeout 1000})
+;; => Can return `nil` if none are waiting
+;; Try again, without timeout
+(js/take-next ctx {:deserializer nc/from-edn})
+;; => Returns next pending message when it becomes available
+```
+
 Again, serialization is done using `edn`.  You can specify your own serializer and
 deserializer, similar to the basic pub/sub functions.
 

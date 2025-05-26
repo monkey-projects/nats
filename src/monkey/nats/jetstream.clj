@@ -59,11 +59,24 @@
       (invoke [this]
         (cond-> (.nextMessage this)
           deserializer (deserializer)))
+      (applyTo [this _]
+        (.invoke this))
       FetchConsumer
       (nextMessage [_]
         (.nextMessage f))
       (close [_]
         (.close f)))))
+
+(defn take-next
+  "Takes the next pending message for the consumer, with given timeout in millis.
+   If no timeout is given, blocks until a message is received.  If no message is
+   received before the timeout is expired, returns `nil`.  Applies any `deserializer`
+   to the resulting message."
+  [^io.nats.client.ConsumerContext ctx {:keys [deserializer timeout]}]
+  (cond-> (if timeout
+            (.next ctx timeout)
+            (.next ctx))
+    deserializer (deserializer)))
 
 (def ack
   "Acknowledges message, if `ack-policy` is `explicit` or `all`."

@@ -44,8 +44,9 @@
               (is (nil? (sut/close consumer))))))
 
         (testing "fetcher"
-          (let [fetcher (sut/fetch ctx {:no-wait false
-                                        :expires-in 1000})
+          (let [fetcher (sut/fetch ctx
+                                   {:no-wait-expires-in 1000
+                                    :max-messages 1})
                 msg {:message "test message"}]
             (testing "can publish"
               (is (some? (sut/publish js subject msg {}))))
@@ -56,8 +57,22 @@
                 (is (= msg (c/from-edn recv)))
                 (is (nil? (sut/ack recv)))))
 
+            (testing "can fetch after new publish"
+              (let [evt {:message "another message"}]
+                (is (some? (sut/publish js subject evt {})))
+                (let [msg (fetcher)]
+                  (is (= evt (c/from-edn msg)))
+                  (is (nil? (sut/ack msg))))))
+
             (testing "can stop and close fetcher"
-              (is (nil? (sut/close fetcher)))))))
+              (is (nil? (sut/close fetcher))))))
+
+        (testing "`take-next`"
+          (let [msg {:message "pending message"}]
+            (is (some? (sut/publish js subject msg {})))
+            (testing "receives next pending message"
+              (is (= msg (sut/take-next ctx {:deserializer c/from-edn
+                                             :timeout 1000})))))))
 
       (testing "can delete stream"
         (is (true? (jsm/delete-stream mgmt stream)))))))
