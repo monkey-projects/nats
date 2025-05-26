@@ -50,8 +50,10 @@
 (defn from-edn
   "Parses given message data from edn"
   [msg]
-  (with-open [r (PushbackReader. (io/reader (.getData msg)))]
-    (edn/read r)))
+  ;; When fetching, msg can be `nil` if none are waiting
+  (when msg
+    (with-open [r (PushbackReader. (io/reader (.getData msg)))]
+      (edn/read r))))
 
 (defn ->message-handler ^MessageHandler [f]
   (reify MessageHandler
