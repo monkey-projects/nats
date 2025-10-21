@@ -9,11 +9,12 @@
     (is (= "test-stream" (.getName (sut/make-options {:name "test-stream"})))))
 
   (testing "sets storage type"
-    (is (= StorageType/File (.getStorageType (sut/make-options {:storage-type :file})))))
+    (is (= StorageType/File (.getStorageType (sut/make-options {:name "test-stream"
+                                                                :storage-type :file})))))
 
   (testing "sets subjects"
     (is (= ["a" "b"]
-           (-> {:subjects ["a" "b"]}
+           (-> {:subjects ["a" "b"] :name "test-stream"}
                (sut/make-options)
                (.getSubjects)
                (seq))))))
