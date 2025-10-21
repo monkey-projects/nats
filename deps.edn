@@ -1,6 +1,6 @@
 {:deps {camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}
-        cheshire/cheshire {:mvn/version "6.0.0"}
-        io.nats/jnats {:mvn/version "2.21.0"}
+        cheshire/cheshire {:mvn/version "6.1.0"}
+        io.nats/jnats {:mvn/version "2.23.0"}
         org.slf4j/jul-to-slf4j {:mvn/version "2.1.0-alpha1"}}
 
  :paths ["src"]
@@ -12,7 +12,7 @@
   ;; clj -X:test
   :test
   {:extra-paths ["test" "dev-resources"]
-   :extra-deps {ch.qos.logback/logback-classic {:mvn/version "1.5.18"}
+   :extra-deps {ch.qos.logback/logback-classic {:mvn/version "1.5.20"}
                 com.monkeyprojects/build {:mvn/version "0.3.1"}
                 yogthos/config {:mvn/version "1.2.1"}}
    :exec-fn monkey.test/all}
@@ -31,7 +31,7 @@
    :exec-fn monkey.build/jar
    :exec-args {:jar "target/nats.jar"
                :lib com.monkeyprojects/nats
-               :version [[:env "LIB_VERSION"] "0.2.1-SNAPSHOT"]
+               :version [[:env "LIB_VERSION"] "0.3.1-SNAPSHOT"]
                :scm
                {:url "https://github.com/monkey-projects/nats.git"}
                :pom-data
