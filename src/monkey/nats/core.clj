@@ -1,16 +1,55 @@
 (ns monkey.nats.core
   "Core namespace that provides a layer on top of the Java Nats library functionality,
    or at least part of it."
-  (:require [clojure
+  (:require [camel-snake-kebab.core :as csk]
+            [clojure
              [edn :as edn]
              [string :as str]]
             [clojure.java.io :as io]
             [clojure.tools.logging :as log]
             [monkey.nats.utils :as u])
-  (:import [io.nats.client Connection MessageHandler Nats Options$Builder]
+  (:import [io.nats.client Connection ErrorListener MessageHandler Nats Options$Builder]
            java.io.PushbackReader))
 
 (def connection? (partial instance? Connection))
+
+(defn ->error-listener
+  "Wraps the function in an `ErrorListener` implementation, which passes
+   each invocation to the listener with a properties structure containing
+   the error details."
+  [f]
+  (let [param-names {:error-occurred
+                     [:connection :error]
+                     :exception-occurred
+                     [:connection :exception]
+                     :flow-control-processed
+                     [:connection :subscription :subject :flow-control-source]
+                     :heartbeat-alarm
+                     [:connection :subscription :last-stream-seq :last-consumer-seq]
+                     :message-discarded
+                     [:connection :message]
+                     :pull-status-error
+                     [:connection :subscription :status]
+                     :pull-status-warning
+                     [:connection :subscription :status]
+                     :slow-consumer-detected
+                     [:connection :consumer]
+                     :socket-write-timeout
+                     [:connection]
+                     :unhandled-status
+                     [:connection :subscription :status]}
+        params->map (fn [t args]
+                      (zipmap (get param-names t) (seq args)))]
+    ;; Proxy the ErrorListener interface and invoke the handler with each
+    ;; method name as the type and its arguments
+    (java.lang.reflect.Proxy/newProxyInstance
+     (.getClassLoader ErrorListener)
+     (into-array Class [ErrorListener])
+     (reify java.lang.reflect.InvocationHandler
+       (invoke [_ proxy method args]
+         (let [t (csk/->kebab-case-keyword (.getName method))]
+           (f (-> (params->map t args)
+                  (assoc :type t)))))))))
 
 (defn- apply-conf [opts conf]
   (let [appliers {:urls #(.servers %1 (into-array String %2))
@@ -21,7 +60,8 @@
                   :credential-path #(.credentialPath %1 %2)
                   :static-creds #(.authHandler %1 (Nats/staticCredentials (.getBytes %2)))
                   :verbose? (fn [o t?] (cond-> o
-                                         t? (.verbose)))}]
+                                         t? (.verbose)))
+                  :error-listener #(.errorListener %1 %2)}]
     (u/configure-builder opts appliers conf)))
 
 (defn make-options

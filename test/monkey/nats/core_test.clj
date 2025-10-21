@@ -5,7 +5,7 @@
             [monkey.nats
              [core :as sut]
              [test-helpers :as h]])
-  (:import (io.nats.client Message)))
+  (:import (io.nats.client Message ErrorListener ErrorListener$FlowControlSource)))
 
 (deftest make-options
   (testing "passes urls from map"
@@ -21,7 +21,97 @@
 
   (testing "accepts file credentials"
     (is (some? (-> (sut/make-options {:credential-path "test-path"})
-                   (.getAuthHandler))))))
+                   (.getAuthHandler)))))
+
+  (testing "accepts error listener"
+    (let [l (reify ErrorListener)]
+      (is (= l (-> (sut/make-options {:error-listener l})
+                   (.getErrorListener)))))))
+
+(deftest ->error-listener
+  (let [recv (atom nil)
+        l (sut/->error-listener (partial reset! recv))
+        conn (reify io.nats.client.Connection)]
+    (testing "wraps function in error listener class"
+      (is (instance? io.nats.client.ErrorListener l)))
+
+    (testing "passes `errorOccurred`"
+      (is (nil? (.errorOccurred l conn "test error")))
+      (is (= {:type :error-occurred
+              :connection conn
+              :error "test error"}
+             @recv)))
+
+    (testing "passes `exceptionOccurred`"
+      (let [ex (ex-info "test error" {})]
+        (is (nil? (.exceptionOccurred l conn ex)))
+        (is (= {:type :exception-occurred
+                :connection conn
+                :exception ex}
+               @recv))))
+
+    (testing "passes `flowControlProcessed`"
+      (is (nil? (.flowControlProcessed l conn nil
+                                       "test.subject" ErrorListener$FlowControlSource/HEARTBEAT)))
+      (is (= {:type :flow-control-processed
+              :connection conn
+              :subscription nil
+              :subject "test.subject"
+              :flow-control-source ErrorListener$FlowControlSource/HEARTBEAT}
+             @recv)))
+
+    (testing "passes `heartbeatAlarm`"
+      (is (nil? (.heartbeatAlarm l conn nil 1234 5678)))
+      (is (= {:type :heartbeat-alarm
+              :connection conn
+              :subscription nil
+              :last-stream-seq 1234
+              :last-consumer-seq 5678}
+             @recv)))
+
+    (testing "passes `messageDiscarded`"
+      (is (nil? (.messageDiscarded l conn nil)))
+      (is (= {:type :message-discarded
+              :connection conn
+              :message nil}
+             @recv)))
+
+    (testing "passes `pullStatusError`"
+      (is (nil? (.pullStatusError l conn nil nil)))
+      (is (= {:type :pull-status-error
+              :connection conn
+              :subscription nil
+              :status nil}
+             @recv)))
+
+    (testing "passes `pullStatusWarning`"
+      (is (nil? (.pullStatusWarning l conn nil nil)))
+      (is (= {:type :pull-status-warning
+              :connection conn
+              :subscription nil
+              :status nil}
+             @recv)))
+
+    (testing "passes `slowConsumerDetected`"
+      (is (nil? (.slowConsumerDetected l conn nil)))
+      (is (= {:type :slow-consumer-detected
+              :connection conn
+              :consumer nil}
+             @recv)))
+
+    (testing "passes `socketWriteTimeout`"
+      (is (nil? (.socketWriteTimeout l conn)))
+      (is (= {:type :socket-write-timeout
+              :connection conn}
+             @recv)))
+
+    (testing "passes `unhandledStatus`"
+      (is (nil? (.unhandledStatus l conn nil nil)))
+      (is (= {:type :unhandled-status
+              :connection conn
+              :subscription nil
+              :status nil}
+             @recv)))))
 
 (deftest integration-test
   (with-open [conn (h/make-connection)]
