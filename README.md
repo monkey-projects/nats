@@ -90,6 +90,27 @@ order to do this, pass the `:queue` option when subscribing:
 
 Multiple subscribers that use the same queue name, will only process each message once.
 
+## Error Handling
+
+NATS provides a system for reporting errors that occur outside of the normal event
+handling flow, i.e. within the NATS client itself.  This can be for example a
+connection problem or some other internal error.  You can listen for these kinds
+of errors by passing an `error-listener` when opening a connection.  The error
+listener should implement the [ErrorListener](https://javadoc.io/static/io.nats/jnats/2.21.1/io/nats/client/ErrorListener.html)
+interface.  But to make it more idiomatic, we have provided a utility function
+called `->error-listener` that wraps a Clojure function in a proxy for the
+`ErrorListener` interface.  Each invocation of one of it's member functions will
+instead be passed to the wrapped function with the arguments converted into a map,
+with a `type` property indicating the kind of error.
+
+For example:
+```clojure
+(defn my-error-handler [args]
+  (println "We got an error of type" (:type args)))
+
+(def conn (nc/make-connection {... :error-listener (nc/->error-listener my-error-handler)}))
+```
+
 # JetStream
 
 The above pub/sub pattern has a big drawback: if no subscriptions are listening
